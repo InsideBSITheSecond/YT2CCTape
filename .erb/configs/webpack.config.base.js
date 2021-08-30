@@ -8,7 +8,11 @@ import webpackPaths from './webpack.paths.js';
 import { dependencies as externals } from '../../build/app/package.json';
 
 export default {
-  externals: [...Object.keys(externals || {})],
+  externals: [
+    ...Object.keys(externals || {}),
+    { '@ffmpeg-installer/ffmpeg': { commonjs: '@ffmpeg-installer/ffmpeg' } },
+    { 'fluent-ffmpeg': { commonjs: 'fluent-ffmpeg' } },
+  ],
 
   module: {
     rules: [
@@ -44,6 +48,7 @@ export default {
   plugins: [
     new webpack.EnvironmentPlugin({
       NODE_ENV: 'production',
+      FLUENTFFMPEG_COV: '',
     }),
   ],
 };

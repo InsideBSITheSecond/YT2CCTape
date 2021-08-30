@@ -80,7 +80,8 @@ const createWindow = async () => {
     height: 728,
     icon: getAssetPath('icon.png'),
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      nodeIntegration: true,
+      contextIsolation: false,
     },
   });
 
@@ -137,3 +138,107 @@ app.on('activate', () => {
   // dock icon is clicked and there are no other windows open.
   if (mainWindow === null) createWindow();
 });
+
+/////////////////////////////////////////
+/*            Custom stuffs            */
+/////////////////////////////////////////
+
+ipcMain.on('video:download', (event, data) => {
+  downloadUrl(data.url, data.name);
+});
+
+//require the ffmpeg package so we can use ffmpeg using JS
+import ffmpeg from 'fluent-ffmpeg';
+//Get the paths to the packaged versions of the binaries we want to use
+/*const ffmpegPath = require('ffmpeg-static').replace(
+  'app.asar',
+  'app.asar.unpacked'
+);
+const ffprobePath = require('ffprobe-static').path.replace(
+  'app.asar',
+  'app.asar.unpacked'
+);
+
+//tell the ffmpeg package where it can find the needed binaries.
+ffmpeg.setFfmpegPath(ffmpegPath);
+ffmpeg.setFfprobePath(ffprobePath);*/
+
+const ytdl = require('ytdl-core');
+const fs = require('fs');
+
+function downloadUrl(url: string, name: string) {
+  const stream = ytdl(url);
+  stream.on('info', (i) => {
+    console.log(i);
+    stream.on('progress', (chunk, downloaded, total) => {
+      mainWindow.webContents.send('download:progress', {
+        desc: 'Downloading from youtube',
+        prog: (downloaded / total) * 100,
+      });
+      if ((downloaded / total) * 100 == 100) {
+        mainWindow.webContents.send('download:progress', {
+          desc: 'Youtube download finished',
+          prog: 100,
+        });
+        convertInputOp(name, './converted.wav', function (err) {
+          if (!err) {
+            console.log('conversion complete');
+          }
+        });
+      }
+    });
+    stream.pipe(fs.createWriteStream(name));
+  });
+}
+
+function convertInputOp(input, output, callback) {
+  ffmpeg(input)
+    .output(output)
+    .outputOptions(['-ar 16000', '-f wav', '-ac 1'])
+    .on('end', function () {
+      console.log('conversion ended');
+      mainWindow.webContents.send('download:progress', {
+        desc: 'convertion ended',
+        prog: 100,
+      });
+      callback(null);
+    })
+    .on('error', function (err) {
+      console.log('error: ', err.code, err.msg);
+      callback(err);
+    })
+    .on('progress', (prog) => {
+      mainWindow.webContents.send('download:progress', {
+        desc: 'converting to wav format',
+        prog: prog.percent,
+      });
+    })
+    .run();
+}
+
+/*async function downloadUrl(url: string, name: string) {
+  ytdl.getInfo(url).then((info, err) => {
+    if (err) console.log(err);
+    console.log(info);
+    var stream = ytdl.downloadFromInfo(info, {
+      quality: 'highestaudio',
+    });
+    ffmpeg(stream)
+      .audioBitrate(info.formats[0].audioBitrate)
+      .withAudioCodec('libmp3lame')
+      .toFormat('mp3')
+      .saveToFile(`${info.videoDetails.title.replace(/\u20A9/g, '')}.mp3`)
+      .on('start', function (commandLine) {
+        console.log('Spawned ffmpeg with command ' + commandLine);
+      })
+      .on('progress', function (progress) {
+        console.log('Progress: ' + progress.percent);
+      })
+      .on('error', function (err) {
+        console.log('error', err);
+      })
+      .on('end', function () {
+        console.log('download ended');
+      });
+  });
+}*/

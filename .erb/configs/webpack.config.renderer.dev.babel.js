@@ -43,7 +43,7 @@ export default merge(baseConfig, {
 
   mode: 'development',
 
-  target: ['web', 'electron-renderer'],
+  target: ['electron-renderer'],
 
   entry: [
     'webpack-dev-server/client?http://localhost:1212/dist',
@@ -57,9 +57,6 @@ export default merge(baseConfig, {
     path: webpackPaths.distRendererPath,
     publicPath: '/',
     filename: 'renderer.dev.js',
-    library: {
-      type: 'umd',
-    },
   },
 
   module: {
@@ -290,7 +287,7 @@ export default merge(baseConfig, {
       verbose: true,
       disableDotRule: false,
     },
-    before() {
+    /*before() {
       console.log('Starting Main Process...');
       spawn('npm', ['run', 'start:main'], {
         shell: true,
@@ -299,6 +296,6 @@ export default merge(baseConfig, {
       })
         .on('close', (code) => process.exit(code))
         .on('error', (spawnError) => console.error(spawnError));
-    },
+    },*/
   },
 });

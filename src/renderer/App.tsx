@@ -1,41 +1,49 @@
-import React from 'react';
+import electron, { ipcRenderer } from 'electron';
+import React, { useState } from 'react';
 import { MemoryRouter as Router, Switch, Route } from 'react-router-dom';
 import icon from '../../assets/icon.svg';
 import './App.global.css';
 
+import ProgressBar from 'react-bootstrap/ProgressBar';
+import Button from 'react-bootstrap/Button';
+
 const Hello = () => {
+  const [url, setUrl] = useState('https://www.youtube.com/watch?v=rqtEGrSGFvw');
+  const [progress, setProgress] = useState(0);
+  const [taskStatus, setTaskStatus] = useState('Waiting for user input');
+
+  ipcRenderer.on('download:progress', (event, data) => {
+    setProgress(data.prog);
+    setTaskStatus(data.desc);
+  });
+
   return (
     <div>
       <div className="Hello">
-        <img width="200px" alt="icon" src={icon} />
+        <img width="500px" alt="icon" src={icon} />
       </div>
-      <h1>electron-react-boilerplate</h1>
-      <div className="Hello">
-        <a
-          href="https://electron-react-boilerplate.js.org/"
-          target="_blank"
-          rel="noreferrer"
+      <h1>YT2CCTape</h1>
+      <div>
+        <input
+          type="text"
+          value={url}
+          placeholder="Enter a message"
+          onChange={(e) => setUrl(e.target.value)}
+          style={{ width: '75%' }}
+        />
+        <Button
+          id="b"
+          onClick={() => {
+            console.log(url);
+            ipcRenderer.send('video:download', { url: url, name: 'test.mp4' });
+          }}
+          style={{ width: '25%' }}
         >
-          <button type="button">
-            <span role="img" aria-label="books">
-              📚
-            </span>
-            Read our docs
-          </button>
-        </a>
-        <a
-          href="https://github.com/sponsors/electron-react-boilerplate"
-          target="_blank"
-          rel="noreferrer"
-        >
-          <button type="button">
-            <span role="img" aria-label="books">
-              🙏
-            </span>
-            Donate
-          </button>
-        </a>
+          Download
+        </Button>
       </div>
+      <p>{taskStatus}</p>
+      <ProgressBar id="pb" now={progress} />
     </div>
   );
 };
